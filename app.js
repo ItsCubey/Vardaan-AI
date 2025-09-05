@@ -582,4 +582,204 @@ class VardaanAI {
             if (e.key === 'ArrowLeft' && currentIndex > 0) {
                 e.preventDefault();
                 this.showSection(sections[currentIndex - 1]);
-            } else if (e.key === 'ArrowRight' && currentIndex < sections.length - 1
+            } else if (e.key === 'ArrowRight' && currentIndex < sections.length - 1) {
+                e.preventDefault();
+                this.showSection(sections[currentIndex + 1]);
+            }
+        }
+    }
+
+    showNotification(message, type = 'info', duration = 5000) {
+        // Remove existing notifications
+        const existing = document.querySelector('.notification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        
+        const icons = {
+            success: 'check_circle',
+            error: 'error',
+            warning: 'warning',
+            info: 'info'
+        };
+
+        notification.innerHTML = `
+            <div class="notification-content">
+                <span class="material-icons">${icons[type]}</span>
+                <span>${message}</span>
+                <button class="notification-close">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+        `;
+
+        // Style notification
+        Object.assign(notification.style, {
+            position: 'fixed',
+            top: '100px',
+            right: '20px',
+            minWidth: '320px',
+            maxWidth: '400px',
+            background: 'var(--color-surface)',
+            border: `2px solid ${type === 'success' ? 'var(--color-accent)' : type === 'error' ? '#ff4444' : 'var(--color-accent)'}`,
+            borderRadius: 'var(--radius-xl)',
+            boxShadow: 'var(--shadow-xl)',
+            zIndex: '10000',
+            opacity: '0',
+            transform: 'translateX(100%)',
+            transition: 'all 0.3s ease'
+        });
+
+        document.body.appendChild(notification);
+
+        // Show notification
+        requestAnimationFrame(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        });
+
+        // Auto hide
+        const hideTimeout = setTimeout(() => {
+            this.hideNotification(notification);
+        }, duration);
+
+        // Close button
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            clearTimeout(hideTimeout);
+            this.hideNotification(notification);
+        });
+    }
+
+    hideNotification(notification) {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }
+
+    // Utility methods
+    throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+
+    debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+}
+
+// Initialize application
+let app = null;
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
+
+function initializeApp() {
+    try {
+        app = new VardaanAI();
+        window.vardaanAI = app;
+        
+        console.log('ðŸŽ‰ Application ready!');
+    } catch (error) {
+        console.error('âŒ Failed to initialize application:', error);
+    }
+}
+
+// Add required CSS for animations and notifications
+const additionalStyles = document.createElement('style');
+additionalStyles.textContent = `
+    .page-section {
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    
+    .page-section:not(.active) {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    
+    .stat-card, .showcase-card, .feature-card {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    
+    .stat-card.animated, .showcase-card.animated, .feature-card.animated {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .field-error {
+        display: flex;
+        align-items: center;
+        gap: var(--space-1);
+        color: #ff4444;
+        font-size: var(--font-size-sm);
+        margin-top: var(--space-2);
+    }
+    
+    .form-control.error {
+        border-color: #ff4444 !important;
+        box-shadow: 0 0 0 4px rgba(255, 68, 68, 0.1) !important;
+    }
+    
+    .notification-content {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-4);
+    }
+    
+    .notification-close {
+        background: none;
+        border: none;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        padding: var(--space-1);
+        border-radius: var(--radius-sm);
+        margin-left: auto;
+    }
+    
+    .notification-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .scroll-progress {
+        width: 0%;
+        transition: width 0.1s ease;
+    }
+    
+    @media (max-width: 768px) {
+        .nav-menu.active {
+            left: 0;
+        }
+    }
+`;
+
+document.head.appendChild(additionalStyles);
+
+// Global error handling
+window.addEventListener('error', (e) => {
+    console.error('Global error:', e.error);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Unhandled promise rejection:', e.reason);
+});
